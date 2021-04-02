@@ -2,12 +2,17 @@ package com.example.inventura.database;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import androidx.annotation.Nullable;
 
 import com.example.inventura.product.ProductModel;
+
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.List;
 
 
 public class DatabaseConnector extends SQLiteOpenHelper {
@@ -57,19 +62,88 @@ public class DatabaseConnector extends SQLiteOpenHelper {
 
         cv.put(COLUMN_PRODUCT_BARCODE, productModel.getBarcode());
         cv.put(COLUMN_PRODUCT_NAME, productModel.getName());
-        cv.put(COLUMN_IS_KG, productModel.isKg());
+        cv.put(COLUMN_PRICE_NET, productModel.getPrice());
+        //cv.put(COLUMN_IS_KG, productModel.isKg());
 
 
-        return db.insert(PRODUCT_TABLE,"", cv);
+        return db.insert(PRODUCT_TABLE, "", cv);
     }
 
-    public boolean checkProduct(ProductModel productModel){
+    public ArrayList<ProductModel> getProducts(String searchString) {
+
+        String sql;
+
+        try{
+            Long.parseLong(searchString);
+
+            if(searchString.length() == 13){
+                sql = String.format("SELECT %s, %s, %s FROM %s WHERE %s = '%s'",
+                        COLUMN_PRODUCT_BARCODE,
+                        COLUMN_PRODUCT_NAME,
+                        COLUMN_PRICE_NET,
+                        PRODUCT_TABLE,
+                        COLUMN_PRODUCT_BARCODE,
+                        searchString);
+            } else {
+                sql = String.format("SELECT %s, %s, %s FROM %s WHERE %s like '%s%%'",
+                        COLUMN_PRODUCT_BARCODE,
+                        COLUMN_PRODUCT_NAME,
+                        COLUMN_PRICE_NET,
+                        PRODUCT_TABLE,
+                        COLUMN_PRODUCT_BARCODE,
+                        searchString);
+            }
+
+        } catch (Exception e){
+            sql = String.format("SELECT %s, %s, %s FROM %s WHERE %s LIKE '%%%s%%'",
+                    COLUMN_PRODUCT_BARCODE,
+                    COLUMN_PRODUCT_NAME,
+                    COLUMN_PRICE_NET,
+                    PRODUCT_TABLE,
+                    COLUMN_PRODUCT_NAME,
+                    searchString);
+        }
+
+
+        return selectQuery(sql);
+    }
+
+    public ArrayList<ProductModel> getAllProductsList() {
+        String sql = String.format("SELECT %s, %s, %s FROM %s",
+                COLUMN_PRODUCT_BARCODE,
+                COLUMN_PRODUCT_NAME,
+                COLUMN_PRICE_NET,
+                PRODUCT_TABLE);
+
+        return selectQuery(sql);
+    }
+
+    public void deleteProduct(ProductModel product){
         SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues cv = new ContentValues();
 
-        cv.put(COLUMN_PRODUCT_BARCODE, productModel.getBarcode());
+        db.delete(PRODUCT_TABLE,COLUMN_PRODUCT_BARCODE + "=?", new String[] {product.getBarcode()});
 
-        return true;
+        db.close();
+    }
+
+
+    private ArrayList<ProductModel> selectQuery(String sql) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        ArrayList<ProductModel> productList = new ArrayList<>();
+
+        Cursor cursor = db.rawQuery(sql, null);
+
+        while (cursor.moveToNext()) {
+            String barcode = cursor.getString(cursor.getColumnIndex(COLUMN_PRODUCT_BARCODE));
+            String name = cursor.getString(cursor.getColumnIndex(COLUMN_PRODUCT_NAME));
+            double price_net = Double.parseDouble(cursor.getString(cursor.getColumnIndex(COLUMN_PRICE_NET)));
+
+            productList.add(new ProductModel(barcode, name, price_net));
+        }
+
+        db.close();
+
+        return productList;
     }
 }
 

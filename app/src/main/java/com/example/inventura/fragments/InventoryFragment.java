@@ -1,10 +1,9 @@
-package com.example.inventura.view;
+package com.example.inventura.fragments;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -12,14 +11,14 @@ import androidx.fragment.app.Fragment;
 
 import com.example.inventura.R;
 
-public class InventoryView extends Fragment {
+public class InventoryFragment extends Fragment {
 
 
-    public InventoryView() {
+    public InventoryFragment() {
         // Required empty public constructor
     }
-    public static InventoryView newInstance() {
-        InventoryView fragment = new InventoryView();
+    public static InventoryFragment newInstance() {
+        InventoryFragment fragment = new InventoryFragment();
         Bundle args = new Bundle();
 
         fragment.setArguments(args);

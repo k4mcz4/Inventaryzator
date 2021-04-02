@@ -1,4 +1,4 @@
-package com.example.inventura.view;
+package com.example.inventura.fragments;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,12 +12,12 @@ import androidx.fragment.app.Fragment;
 
 import com.example.inventura.R;
 
-public class HistoryView extends Fragment {
-    public HistoryView() {
+public class HistoryFragment extends Fragment {
+    public HistoryFragment() {
         // Required empty public constructor
     }
-    public static HistoryView newInstance() {
-        HistoryView fragment = new HistoryView();
+    public static HistoryFragment newInstance() {
+        HistoryFragment fragment = new HistoryFragment();
         Bundle args = new Bundle();
 
         fragment.setArguments(args);
