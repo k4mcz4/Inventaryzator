@@ -1,22 +1,15 @@
 package com.example.inventura.fragments;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.provider.ContactsContract;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,13 +17,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.inventura.PopupHelper;
 import com.example.inventura.R;
 import com.example.inventura.database.DatabaseConnector;
-import com.example.inventura.product.ProductModel;
+import com.example.inventura.model.ProductModel;
 import com.example.inventura.recycler.ProductRecyclerAdapter;
-import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.textfield.TextInputEditText;
-import com.google.android.material.textfield.TextInputLayout;
 
 import java.util.ArrayList;
 
@@ -40,6 +32,7 @@ import static android.app.Activity.RESULT_OK;
 public class ProductFragment extends Fragment {
 
     private ProductRecyclerAdapter recyclerAdapter;
+    private ArrayList<ProductModel> productNames = new ArrayList<ProductModel>();
 
 
     public ProductFragment() {
@@ -54,6 +47,10 @@ public class ProductFragment extends Fragment {
         return fragment;
     }
 
+    private ArrayList<ProductModel> getProductNames() {
+        return this.productNames;
+    }
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,14 +62,12 @@ public class ProductFragment extends Fragment {
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
 
-        DatabaseConnector dbconn = new DatabaseConnector(getContext());
+        DatabaseConnector dbconn = new DatabaseConnector(this.getContext());
 
         View view = inflater.inflate(R.layout.products_view, container, false);
 
-        ArrayList<ProductModel> productNames = new ArrayList<>();
-
         RecyclerView recyclerView = view.findViewById(R.id.product_recycler_view);
-        recyclerAdapter = new ProductRecyclerAdapter(view.getContext(), productNames);
+        recyclerAdapter = new ProductRecyclerAdapter(view.getContext(), getProductNames());
         recyclerView.setAdapter(recyclerAdapter);
         recyclerView.setLayoutManager(new LinearLayoutManager(view.getContext()));
 
@@ -93,7 +88,7 @@ public class ProductFragment extends Fragment {
 
             public boolean onEditorAction(TextView exampleView, int actionId, KeyEvent event) {
                 if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    searchOrInsert(dbconn, textView, productNames, inflater, view);
+                    searchOrInsert(dbconn, textView, getProductNames(), inflater, view);
                 }
                 return true;
             }
@@ -105,7 +100,7 @@ public class ProductFragment extends Fragment {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                searchOrInsert(dbconn, textView, productNames, inflater, view);
+                searchOrInsert(dbconn, textView, getProductNames(), inflater, view);
             }
         });
 
@@ -128,11 +123,8 @@ public class ProductFragment extends Fragment {
             productNames.addAll(dbconn.getProducts(text));
 
             if (productNames.isEmpty()) {
-                onButtonShowPopupWindowClick(inflater, view, text);
-                productNames.clear();
-                productNames.addAll(dbconn.getAllProductsList());
+                new PopupHelper(inflater).onButtonShowPopupWindowClick(view, text, productNames, recyclerAdapter, dbconn);
             }
-            recyclerAdapter.notifyDataSetChanged();
 
             clearAndUpdateScreen(textView);
 
@@ -141,7 +133,10 @@ public class ProductFragment extends Fragment {
             productNames.addAll(dbconn.getAllProductsList());
             recyclerAdapter.notifyDataSetChanged();
         }
+
         recyclerAdapter.resetClickPosition();
+        recyclerAdapter.notifyDataSetChanged();
+
     }
 
 
@@ -169,60 +164,6 @@ public class ProductFragment extends Fragment {
         textView.clearFocus();
         imm.hideSoftInputFromWindow(getView().getWindowToken(), 0);
     }
-
-    private void onButtonShowPopupWindowClick(LayoutInflater inflater, View view, String productString) {
-        View popupView = inflater.inflate(R.layout.product_popup_insert_form, null);
-
-        TextInputEditText textBarcode = popupView.findViewById(R.id.product_popup_insert_barcode);
-        TextInputEditText textName = popupView.findViewById(R.id.product_popup_insert_name);
-        TextInputEditText textPrice = popupView.findViewById(R.id.product_popup_insert_price);
-
-        DatabaseConnector dbconn = new DatabaseConnector(getContext());
-
-        try {
-            Long.parseLong(productString);
-            textBarcode.setText(productString);
-        } catch (Exception e) {
-            textName.setText(productString);
-        }
-
-        int width = LinearLayout.LayoutParams.MATCH_PARENT;
-        int height = LinearLayout.LayoutParams.MATCH_PARENT;
-        boolean focusable = true;
-        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
-
-        popupWindow.showAtLocation(view, Gravity.CENTER, 0, 0);
-
-        popupView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                popupWindow.dismiss();
-                return true;
-            }
-        });
-
-        Button submitButton = (Button) popupView.findViewById(R.id.product_popup_submit_button);
-
-        submitButton.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                Double priceNet;
-                ProductModel product;
-                try {
-                    priceNet = Double.parseDouble(textPrice.getText().toString());
-                } catch (Exception e) {
-                    priceNet = 0.0;
-                }
-                product = new ProductModel(textBarcode.getText().toString(), textName.getText().toString(), priceNet);
-
-                dbconn.addNewProduct(product);
-                popupWindow.dismiss();
-                recyclerAdapter.notifyDataSetChanged();
-            }
-        });
-    }
-
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {

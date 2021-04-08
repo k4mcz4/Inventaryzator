@@ -1,27 +1,22 @@
 package com.example.inventura.recycler;
 
 import android.content.Context;
-import android.graphics.Matrix;
-import android.text.Layout;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.inventura.PopupHelper;
 import com.example.inventura.R;
 import com.example.inventura.database.DatabaseConnector;
-import com.example.inventura.product.ProductModel;
+import com.example.inventura.model.ProductModel;
 
 import java.util.ArrayList;
-import java.util.List;
 
 public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecyclerAdapter.ViewHolder> {
 
@@ -29,8 +24,6 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
     private LayoutInflater mInflater;
     private ItemClickListener mClickListener;
     private int clickPosition = -1;
-
-
 
     public ProductRecyclerAdapter(Context context, ArrayList<ProductModel> data){
         this.mInflater = LayoutInflater.from(context);
@@ -73,19 +66,28 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
             holder.linearLayout.setVisibility(View.VISIBLE);
         }
 
+        holder.editButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new PopupHelper(mInflater).onButtonShowPopupWindowClick(v,mData.get(position),mData,ProductRecyclerAdapter.this,dbconn);
+                resetClickPosition();
+            }
+        });
+
         holder.deleteButton.setOnClickListener(new View.OnClickListener(){
 
             @Override
             public void onClick(View v) {
                 dbconn.deleteProduct(product);
                 mData.remove(product);
-                notifyDataSetChanged();
                 resetClickPosition();
+                notifyDataSetChanged();
             }
         });
 
 
     }
+
 
 
     @Override
@@ -106,6 +108,7 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
         TextView priceTextView;
         LinearLayout linearLayout;
         Button deleteButton;
+        Button editButton;
 
         ViewHolder(View itemView){
             super(itemView);
@@ -115,6 +118,7 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
             linearLayout = itemView.findViewById(R.id.product_card_hidden_buttons);
 
             deleteButton = itemView.findViewById(R.id.product_card_delete_button);
+            editButton = itemView.findViewById(R.id.product_card_edit_button);
 
             itemView.setOnClickListener(this);
         }
@@ -123,6 +127,8 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
         @Override
         public void onClick(View view){
             if (mClickListener != null) mClickListener.onItemClick(view, getAdapterPosition());
+            resetClickPosition();
+            notifyDataSetChanged();
         }
 
     }
@@ -134,4 +140,5 @@ public class ProductRecyclerAdapter extends RecyclerView.Adapter<ProductRecycler
     public interface ItemClickListener {
         void onItemClick(View view, int position);
     }
+
 }
